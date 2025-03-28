@@ -1,17 +1,20 @@
 
 services:
-  postgres:
-    image: postgres:latest
+  postgres_db:
+    image: postgres:15
     container_name: postgres_db
     restart: always
+    env_file:
+      - .env  # Load environment variables
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: banking
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
 
   mongodb:
     image: mongo:latest
