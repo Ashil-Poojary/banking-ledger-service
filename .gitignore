@@ -1,0 +1,40 @@
+# Binaries and temporary files
+bin/
+*.exe
+*.out
+*.log
+*.swp
+
+# Go-specific ignores
+*.test
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.o
+
+# Dependency management
+vendor/
+go.sum
+go.mod~
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# Docker files
+docker-compose.override.yml
+.env
+
+# Logs and data files
+logs/
+*.log
+*.csv
+*.db
+/tmp/
+postgres_data/
+mongo_data/
