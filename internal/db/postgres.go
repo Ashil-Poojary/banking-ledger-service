@@ -1,19 +1,40 @@
 package db
 
 import (
+	"fmt"
 	"log"
+	"time"
 
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/ashil-poojary/banking-ledger-service/models"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var DB *sqlx.DB
+var PostgresDB *gorm.DB
 
-func InitPostgres() {
+// InitPostgresDB initializes the PostgreSQL database connection with retry mechanism
+func InitPostgresDB() {
+	dsn := "user=postgres password=postgres dbname=banking_db host=postgres_db port=5432 sslmode=disable"
 	var err error
-	DB, err = sqlx.Connect("postgres", "host=localhost port=5432 user=user password=password dbname=banking sslmode=disable")
-	if err != nil {
-		log.Fatal("Error connecting to PostgreSQL:", err)
+
+	// Retry logic
+	for i := 0; i < 10; i++ {
+		PostgresDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			fmt.Println("Postgres connected successfully!")
+			return
+		}
+		log.Printf("Failed to connect to PostgreSQL (attempt %d/10): %v", i+1, err)
+		time.Sleep(5 * time.Second) // Wait 5 seconds before retrying
 	}
-	log.Println("Connected to PostgreSQL")
+
+	log.Fatalf("Failed to connect to PostgreSQL after 10 attempts: %v", err)
+}
+
+// AutoMigrate ensures the account table is created in PostgreSQL
+func AutoMigrate() {
+	err := PostgresDB.AutoMigrate(&models.Account{})
+	if err != nil {
+		log.Fatalf("Failed to migrate Postgres DB: %v", err)
+	}
 }

@@ -1,29 +1,53 @@
-
 services:
+  banking-ledger-service:
+    build: .
+    container_name: banking_ledger_service
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres_db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: banking_db
+    networks:
+      - banking_network
+
   postgres_db:
     image: postgres:15
     container_name: postgres_db
     restart: always
-    env_file:
-      - .env  # Load environment variables
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: banking_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d banking_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - banking_network
 
   mongodb:
     image: mongo:latest
-    container_name: mongo_db
+    container_name: mongodb
     restart: always
     ports:
       - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
+    networks:
+      - banking_network
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -32,7 +56,17 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - banking_network
 
 volumes:
-  postgres_data:
-  mongo_data:
+  postgres_data: {}
+
+networks:
+  banking_network:
+    driver: bridge
