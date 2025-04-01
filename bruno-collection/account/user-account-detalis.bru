@@ -1,0 +1,19 @@
+meta {
+  name: user-account-detalis
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:8080/api/account-details?account_number=0042426029
+  body: none
+  auth: bearer
+}
+
+params:query {
+  account_number: 0042426029
+}
+
+auth:bearer {
+  token: {{JWT_TOKEN}}
+}

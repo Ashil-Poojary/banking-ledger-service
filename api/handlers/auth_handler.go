@@ -36,10 +36,9 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		utils.SendResponse(w, http.StatusInternalServerError, false, "Failed to hash password", nil, err.Error())
+		utils.SendResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to hash password")
 		return
 	}
 	user.Password = string(hashedPassword)
@@ -68,6 +67,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		utils.SendResponse(w, http.StatusUnauthorized, false, "Invalid credentials", nil, err.Error())
 		return
 	}
+	log.Printf("User registered")
+	log.Print(dbUser)
 
 	// Compare passwords
 	if err := bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(user.Password)); err != nil {

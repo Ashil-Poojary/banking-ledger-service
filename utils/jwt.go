@@ -3,49 +3,73 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 )
 
-// ExtractUserID extracts user_id from JWT token in Authorization header
+// ExtractUserID extracts the user ID from a Bearer token in the Authorization header
 func ExtractUserID(r *http.Request) (uuid.UUID, error) {
-	tokenString := r.Header.Get("Authorization")
-	if tokenString == "" {
+	// Get token from Authorization header
+	authHeader := r.Header.Get("Authorization")
+	log.Println("[DEBUG] Extracting token from Authorization header:", authHeader)
+
+	if authHeader == "" {
+		log.Println("[ERROR] Authorization token missing")
 		return uuid.Nil, errors.New("authorization token required")
 	}
 
-	secretKey := os.Getenv("JWT_SECRET")
-	if secretKey == "" {
-		secretKey = "default_secret"
+	// Extract token from "Bearer <token>"
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+	if tokenString == "" {
+		return uuid.Nil, errors.New("bearer token missing")
 	}
 
+	// Get secret key from environment
+	secretKey := os.Getenv("JWT_SECRET")
+	if secretKey == "" {
+		secretKey = "default_secret" // Fallback for testing
+	}
+
+	// Parse the token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			log.Println("[ERROR] Unexpected signing method")
 			return nil, errors.New("unexpected signing method")
 		}
 		return []byte(secretKey), nil
 	})
 
 	if err != nil || !token.Valid {
+		log.Println("[ERROR] Invalid token:", err)
 		return uuid.Nil, errors.New("invalid token")
 	}
 
+	// Extract claims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
+		log.Println("[ERROR] Invalid token claims")
 		return uuid.Nil, errors.New("invalid token claims")
 	}
 
+	// Extract user ID
 	userIDStr, ok := claims["user_id"].(string)
+
 	if !ok {
+		log.Println("[ERROR] user_id not found in token")
 		return uuid.Nil, errors.New("user_id not found in token")
 	}
 
+	// Convert user ID to UUID
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
+		log.Println("[ERROR] Invalid user_id format:", err)
 		return uuid.Nil, errors.New("invalid user_id format")
 	}
 

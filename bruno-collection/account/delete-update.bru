@@ -1,0 +1,19 @@
+meta {
+  name: delete-update
+  type: http
+  seq: 3
+}
+
+delete {
+  url: http://localhost:8080/api/delete-account?account_number=ACC45
+  body: none
+  auth: bearer
+}
+
+params:query {
+  account_number: ACC45
+}
+
+auth:bearer {
+  token: {{JWT_TOKEN}}
+}

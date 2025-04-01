@@ -1,0 +1,15 @@
+meta {
+  name: user-accounts
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:8080/api/get-user-accounts
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{JWT_TOKEN}}
+}

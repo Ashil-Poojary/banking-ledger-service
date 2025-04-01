@@ -28,11 +28,11 @@ func SetupRoutes(r *mux.Router, postgresDB *gorm.DB, mongoDB *mongo.Database, re
 	protected.Use(middleware.AuthMiddleware(redisClient))
 
 	// Account Routes
-	protected.HandleFunc("/accounts", accountHandler.CreateAccount).Methods("POST")
-	protected.HandleFunc("/accounts/user", accountHandler.GetUserAccounts).Methods("GET")
-	protected.HandleFunc("/accounts/{id}", accountHandler.GetAccount).Methods("GET")
-	protected.HandleFunc("/accounts/{id}", accountHandler.UpdateAccount).Methods("PUT")
-	protected.HandleFunc("/accounts/{id}", accountHandler.DeleteAccount).Methods("DELETE")
+	protected.HandleFunc("/create-account", accountHandler.CreateAccount).Methods("POST")
+	protected.HandleFunc("/get-user-accounts", accountHandler.GetUserAccounts).Methods("GET")
+	protected.HandleFunc("/account-details", accountHandler.GetAccount).Methods("GET")
+	protected.HandleFunc("/update-account", accountHandler.UpdateAccount).Methods("PUT")
+	protected.HandleFunc("/delete-account", accountHandler.DeleteAccount).Methods("DELETE")
 
 	// Transaction Routes
 	protected.HandleFunc("/transactions", transactionHandler.CreateTransaction).Methods("POST")

@@ -1,17 +1,17 @@
 meta {
-  name: acc-details
+  name: account-create
   type: http
-  seq: 3
+  seq: 1
 }
 
-get {
-  url: http://localhost:8080/api/accounts?id=2
+post {
+  url: http://localhost:8080/api/create-account
   body: json
-  auth: none
+  auth: bearer
 }
 
-params:query {
-  id: 2
+auth:bearer {
+  token: {{JWT_TOKEN}}
 }
 
 body:json {
@@ -19,9 +19,10 @@ body:json {
     "owner_name": "John Doe",
     "email": "john.doe@example.com",
     "phone": "+1234567890",
-    "account_number": "ACC1001",
+    "account_number": "ACC45",
     "account_type": "Savings",
     "balance": 5000.00,
     "currency": "USD"
   }
+  
 }

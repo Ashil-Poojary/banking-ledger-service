@@ -15,21 +15,13 @@ type User struct {
 	Email     string    `gorm:"unique;not null" json:"email"`
 	Phone     string    `gorm:"not null" json:"phone"`
 	Password  string    `gorm:"not null" json:"-"`
-	CreatedAt time.Time `gorm:"not null;default:current_timestamp" json:"created_at"`
-	UpdatedAt time.Time `gorm:"not null;default:current_timestamp on update current_timestamp" json:"updated_at"`
+	CreatedAt time.Time `gorm:"not null;default:current_timestamp"`
+	UpdatedAt time.Time `gorm:"not null;default:current_timestamp"`
 }
 
 // BeforeCreate hashes the password and generates a UUID before inserting the user
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 	u.ID = uuid.New()
-
-	// Hash password before saving
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	u.Password = string(hashedPassword)
-
 	return nil
 }
 

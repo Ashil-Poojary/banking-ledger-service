@@ -55,8 +55,16 @@ func (h *AccountHandler) GetAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Extract account number from query parameter
+	accountNumber := r.URL.Query().Get("account_number")
+	if accountNumber == "" {
+		utils.SendResponse(w, http.StatusBadRequest, false, "Account number is required", nil, "")
+		return
+	}
+
+	// Ensure the account belongs to the user
 	var account models.Account
-	if err := h.DB.Where("user_id = ?", userID).First(&account).Error; err != nil {
+	if err := h.DB.Where("account_number = ? AND user_id = ?", accountNumber, userID).First(&account).Error; err != nil {
 		utils.SendResponse(w, http.StatusNotFound, false, "Account not found", nil, "")
 		return
 	}
@@ -80,7 +88,7 @@ func (h *AccountHandler) GetUserAccounts(w http.ResponseWriter, r *http.Request)
 	utils.SendResponse(w, http.StatusOK, true, "Accounts retrieved successfully", accounts, "")
 }
 
-// UpdateAccount updates the authenticated user's account
+// UpdateAccount updates a specific account belonging to the authenticated user
 func (h *AccountHandler) UpdateAccount(w http.ResponseWriter, r *http.Request) {
 	userID, err := utils.ExtractUserID(r)
 	if err != nil {
@@ -88,21 +96,37 @@ func (h *AccountHandler) UpdateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var account models.Account
-	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
+	accountNumber := r.URL.Query().Get("account_number")
+	if accountNumber == "" {
+		utils.SendResponse(w, http.StatusBadRequest, false, "Account number is required", nil, "")
+		return
+	}
+
+	var updateData models.Account
+	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
 		utils.SendResponse(w, http.StatusBadRequest, false, "Invalid request payload", nil, err.Error())
 		return
 	}
 
-	if err := h.DB.Model(&models.Account{}).Where("user_id = ?", userID).Updates(account).Error; err != nil {
-		utils.SendResponse(w, http.StatusInternalServerError, false, "Failed to update account", nil, err.Error())
+	// Ensure the account belongs to the user and update it
+	result := h.DB.Model(&models.Account{}).
+		Where("account_number = ? AND user_id = ?", accountNumber, userID).
+		Updates(updateData)
+
+	if result.Error != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, false, "Failed to update account", nil, result.Error.Error())
 		return
 	}
 
-	utils.SendResponse(w, http.StatusOK, true, "Account updated successfully", account, "")
+	if result.RowsAffected == 0 {
+		utils.SendResponse(w, http.StatusNotFound, false, "Account not found or no changes applied", nil, "")
+		return
+	}
+
+	utils.SendResponse(w, http.StatusOK, true, "Account updated successfully", updateData, "")
 }
 
-// DeleteAccount deletes the authenticated user's account
+// DeleteAccount deletes a specific account belonging to the authenticated user
 func (h *AccountHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	userID, err := utils.ExtractUserID(r)
 	if err != nil {
@@ -110,8 +134,22 @@ func (h *AccountHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.DB.Delete(&models.Account{}, "user_id = ?", userID).Error; err != nil {
-		utils.SendResponse(w, http.StatusInternalServerError, false, "Failed to delete account", nil, err.Error())
+	accountNumber := r.URL.Query().Get("account_number")
+	if accountNumber == "" {
+		utils.SendResponse(w, http.StatusBadRequest, false, "Account number is required", nil, "")
+		return
+	}
+
+	// Ensure the account belongs to the user before deleting
+	result := h.DB.Where("account_number = ? AND user_id = ?", accountNumber, userID).Delete(&models.Account{})
+
+	if result.Error != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, false, "Failed to delete account", nil, result.Error.Error())
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		utils.SendResponse(w, http.StatusNotFound, false, "Account not found", nil, "")
 		return
 	}
 

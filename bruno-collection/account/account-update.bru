@@ -1,0 +1,32 @@
+meta {
+  name: account-update
+  type: http
+  seq: 5
+}
+
+put {
+  url: http://localhost:8080/api/update-account?account_number=0042426029
+  body: json
+  auth: bearer
+}
+
+params:query {
+  account_number: 0042426029
+}
+
+auth:bearer {
+  token: {{JWT_TOKEN}}
+}
+
+body:json {
+  {
+    "owner_name": "John Doe2",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "account_number": "ACC45",
+    "account_type": "Savings",
+    "balance": 5000.00,
+    "currency": "USD"
+  }
+  
+}
