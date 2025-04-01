@@ -1,0 +1,29 @@
+meta {
+  name: transaction
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:8080/api/transaction?account_number=ACC46
+  body: none
+  auth: bearer
+}
+
+params:query {
+  account_number: ACC46
+}
+
+auth:bearer {
+  token: {{JWT_TOKEN}}
+}
+
+body:json {
+  {
+    "source_account": "ACC45",
+    "destination_account": "ACC49",
+    "amount": 1000.00,
+    "currency": "USD"
+  }
+  
+}

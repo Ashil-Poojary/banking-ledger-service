@@ -17,6 +17,19 @@ import (
 func ProcessTransactions(queueName string, postgresDB *gorm.DB, mongoDB *mongo.Database, rabbitMQChannel *amqp.Channel) {
 	log.Println("[Worker] Starting transaction processing...")
 
+	// Ensure the queue exists before consuming
+	_, err := rabbitMQChannel.QueueDeclare(
+		queueName, // Queue name
+		true,      // Durable
+		false,     // Auto delete
+		false,     // Exclusive
+		false,     // No-wait
+		nil,       // Arguments
+	)
+	if err != nil {
+		log.Fatalf("[Worker] Failed to declare queue: %v", err)
+	}
+
 	msgs, err := rabbitMQChannel.Consume(queueName, "", false, false, false, false, nil)
 	if err != nil {
 		log.Fatalf("[Worker] Failed to register consumer: %v", err)
@@ -46,6 +59,13 @@ func ProcessTransactions(queueName string, postgresDB *gorm.DB, mongoDB *mongo.D
 // processTransaction handles transaction logic within a PostgreSQL transaction
 func processTransaction(postgresDB *gorm.DB, mongoDB *mongo.Database, transaction *models.Transaction) error {
 	tx := postgresDB.Begin() // Start transaction
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			log.Println("[Worker] Panic recovered:", r)
+		}
+	}()
+
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -90,9 +110,10 @@ func processTransaction(postgresDB *gorm.DB, mongoDB *mongo.Database, transactio
 	for i := 0; i < retryCount; i++ {
 		_, err := mongoDB.Collection("transactions").InsertOne(context.TODO(), transaction)
 		if err == nil {
+			log.Println("[Worker] Transaction successfully logged in MongoDB")
 			return nil // Success
 		}
-		log.Println("[Worker] MongoDB insertion failed. Retrying...", err)
+		log.Printf("[Worker] MongoDB insertion failed (attempt %d/%d). Retrying in 2s... Error: %v", i+1, retryCount, err)
 		time.Sleep(2 * time.Second) // Backoff before retry
 	}
 

@@ -8,9 +8,13 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// PublishTransaction sends a transaction message to RabbitMQ using an existing channel
-func PublishTransaction(transaction models.Transaction, ch *amqp.Channel, queueName string) error {
+// RabbitMQPublisher defines the necessary RabbitMQ functions
+type RabbitMQPublisher interface {
+	Publish(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error
+}
 
+// PublishTransaction sends a transaction message to RabbitMQ
+func PublishTransaction(transaction models.Transaction, publisher RabbitMQPublisher, queueName string) error {
 	if err := transaction.Validate(); err != nil {
 		log.Println("Transaction validation failed:", err)
 		return err
@@ -22,15 +26,14 @@ func PublishTransaction(transaction models.Transaction, ch *amqp.Channel, queueN
 		return err
 	}
 
-	err = ch.Publish(
+	err = publisher.Publish(
 		"",
 		queueName,
 		false,
 		false,
 		amqp.Publishing{
-			ContentType:  "application/json",
-			DeliveryMode: amqp.Persistent, // 🔹 Ensure messages persist even after RabbitMQ restarts
-			Body:         body,
+			ContentType: "application/json",
+			Body:        body,
 		},
 	)
 	if err != nil {
@@ -38,6 +41,6 @@ func PublishTransaction(transaction models.Transaction, ch *amqp.Channel, queueN
 		return err
 	}
 
-	log.Println("[Worker] Published transaction:", transaction.ID)
+	log.Println("Published transaction:", string(body))
 	return nil
 }

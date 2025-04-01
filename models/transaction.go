@@ -19,20 +19,26 @@ var validCurrencies = map[string]bool{
 	"USD": true, "EUR": true, "GBP": true, "INR": true, "JPY": true,
 }
 
+type TransferRequest struct {
+	SourceAccount      string  `json:"source_account"`
+	DestinationAccount string  `json:"destination_account"`
+	Amount             float64 `json:"amount"`
+	Currency           string  `json:"currency"`
+}
+
 // Transaction represents a bank transaction stored in MongoDB
 type Transaction struct {
-	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	SourceAccount      string             `bson:"source_account,omitempty" json:"source_account,omitempty"`
-	DestinationAccount string             `bson:"destination_account,omitempty" json:"destination_account,omitempty"`
-	AccountNumber      string             `bson:"account_number,omitempty" json:"account_number,omitempty"`
-	Amount             float64            `bson:"amount" json:"amount"`
-	Currency           string             `bson:"currency,omitempty" json:"currency,omitempty"`
-	Type               string             `bson:"type" json:"type"`
-	Status             string             `bson:"status" json:"status"`
-	Reference          string             `bson:"reference,omitempty" json:"reference,omitempty"`
-	Metadata           map[string]string  `bson:"metadata,omitempty" json:"metadata,omitempty"`
-	CreatedAt          time.Time          `bson:"created_at" json:"created_at"`
-	UpdatedAt          time.Time          `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
+	ID                 primitive.ObjectID `bson:"_id,omitempty"`
+	SourceAccount      string             `bson:"source_account"`
+	DestinationAccount string             `bson:"destination_account"`
+	AccountNumber      string             `bson:"account_number"`
+	Amount             float64            `bson:"amount"`
+	Currency           string             `bson:"currency"`
+	Type               string             `bson:"type"`
+	Status             string             `bson:"status"`
+	Reference          string             `bson:"reference"`
+	CreatedAt          time.Time          `bson:"created_at"`
+	UpdatedAt          time.Time          `bson:"updated_at"`
 }
 
 // Validate checks if the transaction data is valid

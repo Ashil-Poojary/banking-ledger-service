@@ -10,25 +10,24 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 )
 
 // ExtractUserID extracts the user ID from a Bearer token in the Authorization header
-func ExtractUserID(r *http.Request) (uuid.UUID, error) {
+func ExtractUserID(r *http.Request) (string, error) {
 	// Get token from Authorization header
 	authHeader := r.Header.Get("Authorization")
 	log.Println("[DEBUG] Extracting token from Authorization header:", authHeader)
 
 	if authHeader == "" {
 		log.Println("[ERROR] Authorization token missing")
-		return uuid.Nil, errors.New("authorization token required")
+		return "", errors.New("authorization token required")
 	}
 
 	// Extract token from "Bearer <token>"
 	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 	if tokenString == "" {
-		return uuid.Nil, errors.New("bearer token missing")
+		return "", errors.New("bearer token missing")
 	}
 
 	// Get secret key from environment
@@ -48,14 +47,14 @@ func ExtractUserID(r *http.Request) (uuid.UUID, error) {
 
 	if err != nil || !token.Valid {
 		log.Println("[ERROR] Invalid token:", err)
-		return uuid.Nil, errors.New("invalid token")
+		return "", errors.New("invalid token")
 	}
 
 	// Extract claims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		log.Println("[ERROR] Invalid token claims")
-		return uuid.Nil, errors.New("invalid token claims")
+		return "", errors.New("invalid token claims")
 	}
 
 	// Extract user ID
@@ -63,17 +62,10 @@ func ExtractUserID(r *http.Request) (uuid.UUID, error) {
 
 	if !ok {
 		log.Println("[ERROR] user_id not found in token")
-		return uuid.Nil, errors.New("user_id not found in token")
+		return "", errors.New("user_id not found in token")
 	}
 
-	// Convert user ID to UUID
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		log.Println("[ERROR] Invalid user_id format:", err)
-		return uuid.Nil, errors.New("invalid user_id format")
-	}
-
-	return userID, nil
+	return userIDStr, nil
 }
 
 // parseJWT extracts the UserID from the token

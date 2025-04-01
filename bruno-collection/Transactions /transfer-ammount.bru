@@ -1,0 +1,25 @@
+meta {
+  name: transfer-ammount
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/api/ammount-transfer
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{JWT_TOKEN}}
+}
+
+body:json {
+  {
+    "source_account": "ACC45",
+    "destination_account": "ACC49",
+    "amount": 1000.00,
+    "currency": "USD"
+  }
+  
+}

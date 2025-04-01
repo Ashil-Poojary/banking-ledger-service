@@ -36,7 +36,13 @@ func (h *AccountHandler) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	account.UserID = userID
-	account.ID = uuid.New()
+	account.ID = uuid.New().String()
+
+	// Validate account fields before inserting
+	if err := account.Validate(); err != nil {
+		utils.SendResponse(w, http.StatusInternalServerError, false, "Failed to create account", nil, err.Error())
+		return
+	}
 
 	if err := h.DB.Create(&account).Error; err != nil {
 		log.Println("Failed to create account:", err)

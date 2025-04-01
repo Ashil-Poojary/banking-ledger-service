@@ -35,7 +35,7 @@ func SetupRoutes(r *mux.Router, postgresDB *gorm.DB, mongoDB *mongo.Database, re
 	protected.HandleFunc("/delete-account", accountHandler.DeleteAccount).Methods("DELETE")
 
 	// Transaction Routes
-	protected.HandleFunc("/transactions", transactionHandler.CreateTransaction).Methods("POST")
-	protected.HandleFunc("/transactions/{id}", transactionHandler.GetTransaction).Methods("GET")
-	protected.HandleFunc("/transactions/history", transactionHandler.GetTransactionHistory).Methods("GET")
+	protected.HandleFunc("/ammount-transfer", transactionHandler.TransferFunds).Methods("POST")
+	protected.HandleFunc("/transaction/history", transactionHandler.GetTransactionHistory).Methods("GET")
+	protected.HandleFunc("/transaction", transactionHandler.GetTransaction).Methods("GET")
 }

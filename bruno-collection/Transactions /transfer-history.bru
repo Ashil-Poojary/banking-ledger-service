@@ -1,0 +1,32 @@
+meta {
+  name: transfer-history
+  type: http
+  seq: 3
+}
+
+get {
+  url: http://localhost:8080/api/transaction/history?status=completed
+  body: none
+  auth: bearer
+}
+
+params:query {
+  status: completed
+  ~destination_account: ACC49
+  ~source_account: ACC45
+  ~currency: USD
+}
+
+auth:bearer {
+  token: {{JWT_TOKEN}}
+}
+
+body:json {
+  {
+    "source_account": "ACC45",
+    "destination_account": "ACC49",
+    "amount": 1000.00,
+    "currency": "USD"
+  }
+  
+}
