@@ -1,0 +1,28 @@
+meta {
+  name: login
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "john_doe",
+    "password": "SecurePass123"
+  }
+}
+
+tests {
+  let responseData = res.getBody().data;
+  
+  if(responseData){
+    let accessToken = responseData.token;
+     bru.setEnvVar("JWT_TOKEN", accessToken);
+  }
+  
+}

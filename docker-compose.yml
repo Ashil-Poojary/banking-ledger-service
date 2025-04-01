@@ -1,72 +1,110 @@
-services:
-  banking-ledger-service:
-    build: .
-    container_name: banking_ledger_service
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres_db:
-        condition: service_healthy
-      mongodb:
-        condition: service_started
-      rabbitmq:
-        condition: service_healthy
-    environment:
-      POSTGRES_HOST: postgres_db
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: banking_db
-    networks:
-      - banking_network
+version: "3.9"
 
+services:
   postgres_db:
     image: postgres:15
     container_name: postgres_db
-    restart: always
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: banking_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d banking_db"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
       timeout: 5s
-      retries: 10
-    networks:
-      - banking_network
+      retries: 5
 
   mongodb:
-    image: mongo:latest
+    image: mongo:6
     container_name: mongodb
-    restart: always
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
     ports:
       - "27017:27017"
-    networks:
-      - banking_network
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3.13-management
     container_name: rabbitmq
-    restart: always
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
       - "5672:5672"
       - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
-      interval: 5s
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
       timeout: 5s
-      retries: 10
-    networks:
-      - banking_network
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api_gateway:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: api_gateway
+    restart: unless-stopped
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "postgres://${DB_USER}:${DB_PASSWORD}@postgres_db:${DB_PORT}/${DB_NAME}?sslmode=${DB_SSLMODE}"
+      MONGO_URI: "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:${MONGO_PORT}/?authSource=${MONGO_AUTH_SOURCE}"
+      RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:${RABBITMQ_PORT}/"
+      REDIS_HOST: "redis:6379"
+    ports:
+      - "8080:8080"
+    command: ["/app/api_gateway"]  # Runs API & worker in one container
 
 volumes:
-  postgres_data: {}
-
-networks:
-  banking_network:
-    driver: bridge
+  postgres_data:
+  mongo_data:
+  rabbitmq_data:
+  redis_data:

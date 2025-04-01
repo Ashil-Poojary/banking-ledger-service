@@ -1,0 +1,23 @@
+meta {
+  name: logout
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/api/register
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{JWT_TOKEN}}
+}
+
+body:json {
+  
+  {
+    "username": "john_doe",
+    "password": "SecurePass123"
+  }
+}

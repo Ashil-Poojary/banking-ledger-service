@@ -1,0 +1,27 @@
+meta {
+  name: acc-details
+  type: http
+  seq: 3
+}
+
+get {
+  url: http://localhost:8080/api/accounts?id=2
+  body: json
+  auth: none
+}
+
+params:query {
+  id: 2
+}
+
+body:json {
+  {
+    "owner_name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "account_number": "ACC1001",
+    "account_type": "Savings",
+    "balance": 5000.00,
+    "currency": "USD"
+  }
+}

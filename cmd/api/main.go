@@ -1,59 +1,37 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"time"
 
-	"github.com/ashil-poojary/banking-ledger-service/internal/db"
-	"github.com/ashil-poojary/banking-ledger-service/internal/queue"
-	"github.com/ashil-poojary/banking-ledger-service/services"
+	"github.com/ashil-poojary/banking-ledger-service/api/routes"
+	"github.com/ashil-poojary/banking-ledger-service/config"
+	"github.com/ashil-poojary/banking-ledger-service/storage"
+	"github.com/ashil-poojary/banking-ledger-service/worker"
 	"github.com/gorilla/mux"
 )
 
 func main() {
-	log.Println("Starting Banking Ledger Service...")
+	// Load environment variables
+	config.LoadEnv()
 
-	// Initialize PostgreSQL
-	log.Println("Initializing PostgreSQL...")
-	db.InitPostgresDB()
-	log.Println("PostgreSQL initialized successfully.")
+	// Initialize database connections
+	postgresDB := storage.InitPostgres()
+	mongoDB := storage.InitMongo()
+	redisClient := storage.InitRedis()
 
-	// Initialize MongoDB
-	log.Println("Initializing MongoDB...")
-	db.InitMongoDB()
-	log.Println("MongoDB initialized successfully.")
+	// Initialize RabbitMQ
+	_, rabbitMQChannel := storage.InitRabbitMQ()
+	defer storage.CloseRabbitMQ()
 
-	// AutoMigrate to ensure tables exist
-	log.Println("Running database migrations...")
-	db.AutoMigrate()
-	log.Println("Database migrations completed.")
+	// Start transaction worker in a goroutine
+	go worker.ProcessTransactions("transactions", postgresDB, mongoDB, rabbitMQChannel)
 
-	// Start processing transaction queue
-	log.Println("Starting transaction queue processing...")
-	go queue.ProcessTransactionQueue()
-
-	// Initialize router
+	// Start API server
 	r := mux.NewRouter()
+	routes.SetupRoutes(r, postgresDB, mongoDB, redisClient, rabbitMQChannel)
 
-	// Create account endpoint
-	r.HandleFunc("/api/accounts", logRequest(services.CreateAccountHandler)).Methods("POST")
-	r.HandleFunc("/api/transactions", logRequest(services.DepositHandler)).Methods("POST")
-	r.HandleFunc("/api/transactions/{accountID}", logRequest(services.GetTransactionsHandler)).Methods("GET")
-	r.HandleFunc("/api/transactions/withdraw", logRequest(services.WithdrawHandler)).Methods("POST")
-
-	// Start the server
-	log.Println("Banking Ledger Service is running on port 8080...")
+	fmt.Println("API server running on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
-}
-
-// Middleware to log incoming requests
-func logRequest(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		log.Printf("[%s] %s %s", r.Method, r.RequestURI, start.Format(time.RFC3339))
-		handler(w, r)
-		duration := time.Since(start)
-		log.Printf("[%s] Completed in %v", r.Method, duration)
-	}
 }

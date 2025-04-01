@@ -1,0 +1,29 @@
+meta {
+  name: Create
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/accounts
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{JWT_TOKEN}}
+}
+
+body:json {
+  {
+    "owner_name": "John Doe",
+    "user_id": "123e4567-e89b-12d3-a456-sad",
+    "email": "john.doe@example.com",
+    "phone": "+1234567890",
+    "account_number": "ACC1245",
+    "account_type": "saving",
+    "balance": 5000.00,
+    "currency": "USD"
+  }
+  
+}
