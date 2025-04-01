@@ -30,6 +30,7 @@ func NewTransactionHandler(postgresDB *gorm.DB, mongoDB *mongo.Database, rabbitM
 }
 
 // CreateTransaction handles transaction creation
+// CreateTransaction handles transaction requests
 func (h *TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	var txn models.Transaction
 	if err := json.NewDecoder(r.Body).Decode(&txn); err != nil {
@@ -39,7 +40,7 @@ func (h *TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Re
 
 	// Publish transaction using RabbitMQ
 	if err := worker.PublishTransaction(txn, h.RabbitMQ, h.QueueName); err != nil {
-		utils.SendResponse(w, http.StatusInternalServerError, false, "", nil, "Failed to publish transaction")
+		utils.SendResponse(w, http.StatusServiceUnavailable, false, "", nil, "RabbitMQ is unavailable. Please try again later.")
 		return
 	}
 
